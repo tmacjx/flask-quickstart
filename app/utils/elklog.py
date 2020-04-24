@@ -325,7 +325,7 @@ class FlaskLogStash(object):
     def __init__(self, log_format=DEFAULT_FORMAT, level='DEBUG', app=None):
         self.log_format = log_format
         self.level = level
-        self._logger = logging.getLogger('cc-logger')
+        self._logger = logging.getLogger('api-logger')
         self._logger.setLevel(logging.DEBUG)
         self._logger.propagate = 0
 
@@ -383,13 +383,14 @@ class FlaskLogStash(object):
         self._logger = val
 
     def init_app(self, app):
-        log_path = app.config.get('LOGPATH', 'app.log')
+        log_path = app.config.get('LOG_PATH', 'app.log')
+        log_level = app.config.get("LOG_LEVEL", "DEBUG")
 
-        def __init_logger(logger, log_path, level, formatter):
+        def __init_logger(logger, path, level, formatter):
 
             log_filter = RequestIDLogFilter()
 
-            fh = MultiProcessTimedRotatingFileHandler(log_path, when='MIDNIGHT', interval=1)
+            fh = MultiProcessTimedRotatingFileHandler(path, when='MIDNIGHT', interval=1)
             fh.setLevel(level)
             # 定义handler的输出格式
             fh.setFormatter(formatter)
@@ -405,7 +406,7 @@ class FlaskLogStash(object):
                 ch.addFilter(log_filter)
                 logger.addHandler(ch)
 
-        __init_logger(self.logger, log_path, self.level, self.log_format)
+        __init_logger(self.logger, log_path, log_level, self.log_format)
 
         @app.before_request
         def before_request():

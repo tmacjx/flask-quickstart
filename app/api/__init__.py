@@ -6,7 +6,7 @@
 from flask import Blueprint
 
 
-routes = Blueprint("app", __name__)
+routes = Blueprint("app", __name__, url_prefix='/api')
 
 
 @routes.route('/ping', methods=['GET'])

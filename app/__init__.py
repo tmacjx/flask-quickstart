@@ -11,10 +11,11 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_apidoc import ApiDoc
 from flask_cors import CORS
-from app.utils import FlaskLogStash
+from app.utils import FlaskLogStash, dev_env
 from app.config import load_config
 from sqlalchemy.exc import DatabaseError
-
+from app.utils import create_redis_connection, RedisClient
+from app import api
 
 config = load_config()
 
@@ -24,10 +25,19 @@ STATIC_FOLDER = os.path.join(PROJECT_DIR, 'static')
 
 db = SQLAlchemy()
 
-# log级别转为config里面
-log_level = 'DEBUG'
-log_stash = FlaskLogStash(level=log_level)
+
+log_stash = FlaskLogStash()
 logger = log_stash.logger
+
+
+def doc_init_app(app):
+    # 开发模式下, 开放文档
+    if config.DEBUG:
+        ApiDoc(app=app)
+
+
+redis_conn = create_redis_connection()
+redis_client = RedisClient(redis_conn)
 
 
 def create_app(env_config=config):
@@ -36,9 +46,8 @@ def create_app(env_config=config):
 
     db.init_app(app)
     app.config.from_object(env_config)
-    # todo doc文档需要检查权限
-    ApiDoc(app=app)
     log_stash.init_app(app)
+    api.init_app(app)
 
     @app.teardown_request
     def teardown_request(exception):

@@ -3,14 +3,28 @@
 # @Time 2020/4/22 10:35
 
 """
+from .cache import *
 from .elklog import *
+from .httputils import *
+from .localcache import *
+from .redis import *
+from .timeformat import *
+
 from flask import request, abort
 from geoip import geolite2
-from sqlalchemy.orm.query import Query
+import datetime
+from sqlalchemy.engine import ResultProxy, RowProxy
 import decimal
 import json
 import random
 from flask import current_app, has_request_context
+
+
+def dev_env():
+    if current_app.config['DEBUG']:
+        return True
+    else:
+        return False
 
 
 def _get_current_context():
@@ -22,22 +36,26 @@ def _get_current_context():
 
 
 class JSONEncoder(json.JSONEncoder):
-    """Custom JSON encoding class, to handle Decimal and datetime.date instances."""
+    """JSONEncoder subclass that knows how to encode date/time and
+    decimal types, and also ResultProxy/RowProxy of SQLAlchemy.
+    """
+
+    DATE_FORMAT = "%Y-%m-%d"
+    TIME_FORMAT = "%H:%M:%S"
 
     def default(self, o):
-        # Some SQLAlchemy collections are lazy.
-        if isinstance(o, Query):
-            return list(o)
-        if isinstance(o, decimal.Decimal):
-            return float(o)
-
-        if isinstance(o, (datetime.date, datetime.time)):
-            return o.isoformat()
-
-        if isinstance(o, datetime.timedelta):
+        if isinstance(o, datetime.datetime):
+            return o.strftime("%s %s" % (self.DATE_FORMAT, self.TIME_FORMAT))
+        elif isinstance(o, datetime.date):
+            return o.strftime(self.DATE_FORMAT)
+        elif isinstance(o, datetime.time):
+            return o.strftime(self.TIME_FORMAT)
+        elif isinstance(o, decimal.Decimal):
             return str(o)
-
-        super(JSONEncoder, self).default(o)
+        elif isinstance(o, ResultProxy):
+            return list(o)
+        elif isinstance(o, RowProxy):
+            return dict(o)
 
 
 def json_dumps(data):

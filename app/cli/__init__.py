@@ -5,9 +5,11 @@ import unittest
 import click
 import coverage as cover
 from flask import current_app
-from flask.cli import FlaskGroup
+from flask.cli import FlaskGroup, run_command
 from flask_migrate import MigrateCommand
 from pylint import epylint as lint
+from flask_script import Manager
+
 
 from app import config
 from app import create_app, __version__
@@ -26,13 +28,18 @@ def create(group):
     return app
 
 
+# app = create(group=FlaskGroup)
+
 @click.group(cls=FlaskGroup, create_app=create)
 def manager():
     """Management script for app"""
 
 
+manager.help_args = ('-h', '-?', '--help')
 manager.add_command('db', MigrateCommand)
 manager.add_command(database.manager, "database")
+manager.add_command(run_command, "runserver")
+
 
 COV = cover.coverage(
     branch=True,
@@ -47,15 +54,21 @@ COV = cover.coverage(
 @manager.command()
 def version():
     """Displays app version."""
+
     print(__version__)
 
 
-# todo 输出当前配置
-# @manager.command()
-# def check_settings():
-#     """Show the settings as Redash sees them (useful for debugging)."""
-#     for name, item in settings.all_settings().iteritems():
-#         print("{} = {}".format(name, item))
+@manager.command()
+def check_config():
+    """Show the settings as Redash sees them (useful for debugging)."""
+    for name, item in config.items():
+        print("{} = {}".format(name, item))
+
+
+# todo 检查mysql等状态
+@manager.command()
+def status():
+    pass
 
 
 lint_options = "app"
@@ -113,14 +126,3 @@ def ipython():
     ctx.update(app.make_shell_context())
 
     IPython.embed(banner1=banner, user_ns=ctx)
-
-
-# @manager.command
-# def runserver():
-#     """Run the application with DEBUG"""
-#     # 127.0.0.1:5000
-#     run(debug=True)
-
-
-# if __name__ == '__main__':
-#     manager.run()

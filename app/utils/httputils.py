@@ -20,8 +20,6 @@ def xml_to_dict(xml_str):
 
 
 class APIClient(object):
-    exception = Exception
-
     def __init__(self, base_url, headers=None, http_service=requests, retry=3, timeout=5):
         if headers is None:
             headers = {}
@@ -31,7 +29,6 @@ class APIClient(object):
         self.retry = retry
         self.timeout = timeout
 
-    # @api_retry()
     def fetch_json(
             self,
             uri_path,
@@ -40,6 +37,7 @@ class APIClient(object):
             query_params=None,
             post_args=None,
             files=None,
+            retry=3,
             timeout=5):
 
         # explicit values here to avoid mutable default values
@@ -65,7 +63,9 @@ class APIClient(object):
         if uri_path[0] == '/':
             uri_path = uri_path[1:]
         url = '%s/%s' % (self.base_url, uri_path)
-        for i in range(self.retry):
+
+        http_status, resp_data, consume_time = -1, None, None
+        for i in range(retry):
             try:
                 before_time = int(time.time() * 1000)
                 response = self.http_service.request(http_method, url, params=query_params,
@@ -86,8 +86,8 @@ class APIClient(object):
                 logger.error('请求异常 {url} {exc}'.format(url=url, exc=e), exc_info=True)
                 return -1, None
             else:
+                http_status = response.status_code
                 break
-        http_status = response.status_code
         if http_status not in [200, 201]:
             logger.info("请求失败")
         else:
