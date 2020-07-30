@@ -1,19 +1,13 @@
 """
 # @Author  wk
 # @Time 2020/4/22 10:52
-
+  路由URL
 """
-from flask import Blueprint
+
+from app.api.resources.user import UserResource, UsersResource
 
 
-routes = Blueprint("app", __name__, url_prefix='/api')
+def initialize_routes(rest_api):
+    rest_api.add_resource(UsersResource, '/users')
+    rest_api.add_resource(UserResource, '/users/<int:user_id>')
 
-
-@routes.route('/ping', methods=['GET'])
-def ping():
-    return 'PONG.'
-
-
-def init_app(app):
-    from app.api import auth
-    app.register_blueprint(routes)

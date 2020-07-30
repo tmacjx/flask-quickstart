@@ -3,7 +3,7 @@
 CLI to manage app
 """
 
-from app.cli import manager
+from cli import manager
 
 if __name__ == '__main__':
     manager()

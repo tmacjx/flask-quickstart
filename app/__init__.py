@@ -7,15 +7,20 @@
 __version__ = '1.0.0'
 
 import os
+
+import redis_sentinel_url
+from flasgger import Swagger
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_apidoc import ApiDoc
+from flask_restful import Api as _Api
+
 from flask_cors import CORS
-from app.utils import FlaskLogStash, dev_env
-from app.config import load_config
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import DatabaseError
-from app.utils import create_redis_connection, RedisClient
-from app import api
+
+from app.api import initialize_routes
+from app.config import load_config
+from common.log import FlaskLogStash
+from common.utils import RedisClient
 
 config = load_config()
 
@@ -30,24 +35,55 @@ log_stash = FlaskLogStash()
 logger = log_stash.logger
 
 
-def doc_init_app(app):
-    # 开发模式下, 开放文档
-    if config.DEBUG:
-        ApiDoc(app=app)
+# todo init mq
+def init_redis():
+    logger.debug("Creating Redis connection (%s)", config.REDIS_URL)
+    max_connections = config.REDIS_POOL_SIZE
+    client_options = {"retry_on_timeout": True, "decode_responses": True,
+                      "socket_keepalive": True, "max_connections": max_connections}
+
+    sentinel, client = redis_sentinel_url.connect(config.REDIS_URL, client_options=client_options)
+    return client
 
 
-redis_conn = create_redis_connection()
+# todo 需要测试 是否只捕获flask的error handler
+class Api(_Api):
+    def error_router(self, original_handler, e):
+        """ Override original error_router to only custom errors and parsing error (from webargs)"""
+        error_type = type(e).__name__.split(".")[-1] # extract the error class name as a string
+        # if error can be handled by flask_restful's Api object, do so
+        # otherwise, let Flask handle the error
+        # the 'UnprocessableEntity' is included only because I'm also using webargs
+        # feel free to omit it
+        if self._has_fr_route():
+            try:
+                return self.handle_error(e)
+            except Exception:
+                pass  # Fall through to original handler
+
+        return original_handler(e)
+
+
+rest_api = Api()
+
+
+redis_conn = init_redis()
 redis_client = RedisClient(redis_conn)
 
 
 def create_app(env_config=config):
     app = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')
+
     CORS(app, resources=[r"/api/.*"], origins=r'.*')
 
     db.init_app(app)
     app.config.from_object(env_config)
     log_stash.init_app(app)
-    api.init_app(app)
+    initialize_routes(rest_api)
+    rest_api.init_app(app)
+    Swagger(app)
+
+    print(app.url_map)
 
     @app.teardown_request
     def teardown_request(exception):
@@ -56,3 +92,6 @@ def create_app(env_config=config):
             raise exception
         db.session.remove()
     return app
+
+
+app = create_app()

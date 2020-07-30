@@ -4,11 +4,11 @@
 
 """
 
-import datetime
-from uuid import UUID
+
 from sqlalchemy.orm.attributes import QueryableAttribute
 import json
 from app import db, logger
+from app.utils import JSONEncoder
 
 
 class BaseModel(db.Model):
@@ -59,15 +59,8 @@ class BaseModel(db.Model):
         return ret_data
 
     def to_json(self, only=None, exclude=None):
-        def extended_encoder(x):
-            if isinstance(x, datetime.date):
-                return datetime.date.strftime(x, "%Y-%m-%d")
-            if isinstance(x, datetime.datetime):
-                return datetime.datetime.strftime(x, "%Y-%m-%d %H:%M:%S")
-            if isinstance(x, UUID):
-                return str(x)
         data = self.to_dict(only=only, exclude=exclude)
-        return json.dumps(data, default=extended_encoder)
+        return json.dumps(data, cls=JSONEncoder)
 
     @classmethod
     def from_json(cls, json_str):
@@ -95,8 +88,8 @@ class CRUDMixin(object):
         delete - 删除
     """
     @classmethod
-    def create(cls, commit=True, **kwargs):
-        instance = cls(**kwargs)
+    def create(cls, commit=True, **kw):
+        instance = cls(**kw)
         return instance.save(commit)
 
     @classmethod
@@ -111,8 +104,22 @@ class CRUDMixin(object):
             instance = cls.create(commit, **kw)
         return instance
 
-    def update(self, commit=True, **kwargs):
-        for attr, value in kwargs.items():
+    @classmethod
+    def get(cls, **kw):
+        ret = cls.query.filter_by(**kw)
+        if len(ret):
+            return ret[0]
+
+    @classmethod
+    def gets(cls, **kw):
+        return cls.query.filter_by(**kw)
+
+    @classmethod
+    def count(cls, **kw):
+        return cls.query.filter_by(**kw).count()
+
+    def update(self, commit=True, **kw):
+        for attr, value in kw.items():
             setattr(self, attr, value)
         return commit and self.save() or self
 
@@ -125,6 +132,12 @@ class CRUDMixin(object):
     def delete(self, commit=True):
         db.session.delete(self)
         return commit and db.session.commit() or self
+
+    @classmethod
+    def deletes(cls, **kwargs):
+        rs = cls.gets(**kwargs)
+        for r in rs:
+            r.delete()
 
 
 class TimestampMixin(object):

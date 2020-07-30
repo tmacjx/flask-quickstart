@@ -15,11 +15,9 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = "mysql://root:123456@localhost/test?charset=utf8&autocommit=true"
     SQLALCHEMY_POOL_SIZE = 32
 
-    REDIS = []
-    REDIS_PASSWORD = ""
     DEFAULT_LOCALE = "zh"
     DEFAULT_TIMEZONE = "Asia/Shanghai"
-    REDIS_URL = "redis://test:123456@localhost:6379,/0"
+    REDIS_URL = "redis://test:123456@localhost:6379/0"
     REDIS_sentinel_URL = "redis+sentinel://test:test@localhost:6379/0;"
     REDIS_POOL_SIZE = 200
 

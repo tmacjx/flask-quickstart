@@ -6,5 +6,5 @@
 from .default import Config
 
 
-class DevelopConfig(Config):
+class TestConfig(Config):
     TEST = True
