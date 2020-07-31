@@ -15,16 +15,16 @@ class BaseError(Exception):
     alarm_level = 'error'
 
     def __init__(self, message=None, payload=None):
-        status, msg, msg_en = ERROR_CODES.get(self.__class__.__name__)
-        self.status = status
+        code, msg, msg_en = ERROR_CODES.get(self.__class__.__name__)
+        self.code = code
         if message is not None:
             self.message = message
         else:
             self.message = msg
-        super(BaseError, self).__init__(message, status, payload)
+        super(BaseError, self).__init__(message, code, payload)
 
     def __str__(self):
-        return '%s: %s' % (self.status, self.message)
+        return '%s: %s' % (self.code, self.message)
 
     def __repr__(self):
         return '%s: %s' % (self.__class__.__name__, self.args)

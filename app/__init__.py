@@ -12,6 +12,8 @@ import redis_sentinel_url
 from flasgger import Swagger
 from flask import Flask
 from flask_restful import Api as _Api
+from werkzeug.exceptions import HTTPException
+
 
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -49,18 +51,12 @@ def init_redis():
 # todo 需要测试 是否只捕获flask的error handler
 class Api(_Api):
     def error_router(self, original_handler, e):
-        """ Override original error_router to only custom errors and parsing error (from webargs)"""
-        error_type = type(e).__name__.split(".")[-1] # extract the error class name as a string
-        # if error can be handled by flask_restful's Api object, do so
-        # otherwise, let Flask handle the error
-        # the 'UnprocessableEntity' is included only because I'm also using webargs
-        # feel free to omit it
-        if self._has_fr_route():
+        """ Override original error_router to only handle HTTPExceptions."""
+        if self._has_fr_route() and isinstance(e, HTTPException):
             try:
                 return self.handle_error(e)
             except Exception:
                 pass  # Fall through to original handler
-
         return original_handler(e)
 
 
@@ -80,7 +76,6 @@ def create_app(env_config=config):
     app.config.from_object(env_config)
     log_stash.init_app(app)
     initialize_routes(rest_api)
-    rest_api.init_app(app)
     Swagger(app)
 
     print(app.url_map)
@@ -94,4 +89,4 @@ def create_app(env_config=config):
     return app
 
 
-app = create_app()
+current_app = create_app()

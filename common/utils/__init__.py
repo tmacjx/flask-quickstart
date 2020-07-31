@@ -4,3 +4,4 @@
 """
 
 from .redis import *
+from .base import *

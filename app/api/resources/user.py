@@ -4,8 +4,18 @@
 
 """
 from flask.ext.restful import Resource
-from app.forms import USER_ARGS
+# from app.forms import USER_ARGS
 from flask.ext.restful import fields, marshal_with
+from common.mixins.model_helpers import ServiceDAO
+from app.models.user import SysUser as SysUserModel
+
+
+# Create DAO
+class UserDAO(ServiceDAO):
+    pass
+
+
+DAO = UserDAO(SysUserModel)
 
 
 class UsersResource(Resource):
@@ -41,11 +51,11 @@ class UsersResource(Resource):
                     $ref: '#/definitions/User'
         :return:
         """
-        pass
+        return DAO.first()
 
 
 class UserResource(Resource):
-    @marshal_with(USER_ARGS)
+    # @marshal_with(USER_ARGS)
     def get(self, user_id):
         """
         用户API
