@@ -14,6 +14,9 @@ from common.utils import JSONEncoder
 import traceback
 
 
+logger = logging.getLogger(__name__)
+
+
 class TimestampMixin(object):
     updated_at = db.Column(db.DateTime(True), default=db.func.now(),
                            onupdate=db.func.now(), nullable=False)
@@ -91,13 +94,13 @@ def save_to_db(item, msg):
     :param msg: Message to log
     """
     try:
-        logging.info(msg)
+        logger.info(msg)
         db.session.add(item)
-        logging.info('added to session')
+        logger.info('added to session')
         db.session.commit()
         return True
     except Exception as e:
-        logging.error('DB Exception! %s' % e)
+        logger.error('DB Exception! %s' % e)
         traceback.print_exc()
         db.session.rollback()
         return False
@@ -109,14 +112,14 @@ def delete_from_db(item, msg):
     :param msg: Message to log
     """
     try:
-        logging.info(msg)
+        logger.info(msg)
         db.session.delete(item)
-        logging.info('removed from session')
+        logger.info('removed from session')
         db.session.commit()
         return True
     except Exception as e:
         print(e)
-        logging.error('DB Exception! %s' % e)
+        logger.error('DB Exception! %s' % e)
         db.session.rollback()
         return False
 

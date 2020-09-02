@@ -7,6 +7,18 @@ from .import db
 from common.mixins.model_helpers import TimestampMixin, BaseModel
 
 
+# class Article(Base):
+#     __tablename__ = 'articles'
+#     id = Column(Integer, primary_key=True)
+#     comments = relationship("Comment")
+#
+#
+# class Comment(Base):
+#     __tablename__ = 'comments'
+#     id = Column(Integer, primary_key=True)
+#     article_id = Column(Integer, ForeignKey('articles.id'))
+
+
 class SysRole(TimestampMixin, BaseModel):
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(32))

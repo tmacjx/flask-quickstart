@@ -2,8 +2,10 @@
 # @Time    : 2020/7/30 11:30
 # @Author  : tmackan
 """
-import sys
 import time
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 def retry(func):
@@ -13,7 +15,7 @@ def retry(func):
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                print(sys.stderr, 'error while %s' %func.func_name, tries, e, args, kwargs)
+                logger.error("error while %s %s %s %s %s" % func.func_name, tries, e, args, kwargs)
                 tries -= 1
                 if tries == 0:
                     raise

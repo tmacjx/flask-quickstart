@@ -12,7 +12,7 @@ ERROR_CODES = {
 
 
 class BaseError(Exception):
-    alarm_level = 'error'
+    raise_alarm = True
 
     def __init__(self, message=None, payload=None):
         code, msg, msg_en = ERROR_CODES.get(self.__class__.__name__)
@@ -31,21 +31,17 @@ class BaseError(Exception):
 
 
 class ServerError(BaseError):
-    alarm_level = 'error'
-
     def __init__(self, message=None, payload=None):
             super(ServerError, self).__init__(message, payload)
 
 
 class ThirdAPIException(BaseError):
-    alarm_level = 'error'
-
     def __init__(self, message=None, payload=None):
         super(ThirdAPIException, self).__init__(message, payload)
 
 
 class ValidationError(BaseError):
-    alarm_level = 'info'
+    raise_alarm = False
 
     def __init__(self, message=None, payload=None):
         super(ValidationError, self).__init__(message, payload)
