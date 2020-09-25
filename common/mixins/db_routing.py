@@ -4,6 +4,12 @@ https://gist.github.com/adhorn/b84dc47175259992d406
 https://techspot.zzzeek.org/2012/01/11/django-style-database-routers-in-sqlalchemy/
 https://jiajunhuang.com/articles/2019_12_21-autocommit.md.html
 https://stackoverflow.com/questions/8947918/read-slave-read-write-master-setup/8981058#8981058
+http://andrewburdyug.github.io/blog/posts/sqlalchemy-tips-and-trics/
+http://cjltsod.logdown.com/posts/257665-sqlalchemy-readonly-session-maker-with-pyramid
+https://gist.github.com/carljm/57bfb8616f11bceaf865
+
+sqlchemy采用隐式开始事务
+
 """
 
 
@@ -81,7 +87,7 @@ class RoutingSession(orm.Session):
             current_app.logger.info("Connecting -> SLAVE")
             slave_key = random.choice(self.slave_keys)
             self.bind_key = slave_key
-            return state.db.get_engine(self.app, bind=slave_key)
+            return state.db.get_engine(self.app, bind=self.bind_key)
 
     def using_bind(self, name):
         return UsingEngineContext(name, self)
@@ -138,7 +144,7 @@ class RouteSQLAlchemy(SQLAlchemy):
         if not cluster:
             raise RuntimeError('Missing SQLALCHEMY_CLUSTER config')
 
-        self.master_keys = cluster.get("master") or []
+        self.master_key = cluster.get("master") or []
         self.slave_keys = cluster.get("slave") or []
         super(RouteSQLAlchemy, self).init_app(app)
 
@@ -157,6 +163,7 @@ class RouteSQLAlchemy(SQLAlchemy):
 
 db = RouteSQLAlchemy()
 
+# todo 需要验证
 with db.session().using_bind("master"):
     pass
 

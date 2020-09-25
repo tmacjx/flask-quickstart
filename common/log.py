@@ -249,9 +249,9 @@ class FlaskHttpInfo(HTTPInfo):
 
     def get_req_data(self):
         if self.is_json_type(request.mimetype):
-            data = self._request.data
-        else:
             data = self._request.json
+        else:
+            data = self._request.form
         return data
 
     def get_agent_type(self):
