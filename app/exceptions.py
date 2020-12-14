@@ -4,18 +4,22 @@
  业务异常
 """
 
-ERROR_CODES = {
+from common.utils import Storage
+
+error_list = {
     "ServerError": (11, '系统错误', 'ServerError'),
     "ValidationError": (10, '参数错误', 'Invalid field')
 
 }
+
+errors = Storage([(e, e) for e in error_list.keys()])
 
 
 class BaseError(Exception):
     raise_alarm = True
 
     def __init__(self, message=None, payload=None):
-        code, msg, msg_en = ERROR_CODES.get(self.__class__.__name__)
+        code, msg, msg_en = errors.self.__class__.__name__
         self.code = code
         if message is not None:
             self.message = message

@@ -66,6 +66,9 @@ rest_api = Api()
 redis_conn = init_redis()
 redis_client = RedisClient(redis_conn)
 
+from common.lock import Lock, RedisLockBackend
+distributedLock = Lock(RedisLockBackend)
+
 
 def create_app(env_config=config):
     app = Flask(__name__, static_folder=STATIC_FOLDER, static_url_path='/static')

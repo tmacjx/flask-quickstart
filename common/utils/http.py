@@ -30,10 +30,10 @@ class HttpAPIClient(object):
         self.retry = retry
         self.timeout = timeout
 
-    def fetch_json(
+    def request(
             self,
+            http_method,
             uri_path,
-            http_method='GET',
             headers=None,
             query_params=None,
             post_args=None,
@@ -97,3 +97,17 @@ class HttpAPIClient(object):
                 url=url, data=data, status=http_status, resp_data=resp_data, consume_time=consume_time))
 
         return http_status, resp_data
+
+    def get(self, *args, **kwargs):
+        return self.request("GET", *args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        return self.request("POST", *args, **kwargs)
+
+    def put(self, *args, **kwargs):
+        return self.request("PUT", *args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        return self.request("DELETE", *args, **kwargs)
+
+
