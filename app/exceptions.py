@@ -8,7 +8,7 @@ from common.utils import Storage
 
 error_list = {
     "ServerError": (11, '系统错误', 'ServerError'),
-    "ValidationError": (10, '参数错误', 'Invalid field')
+    "ValidationError": (10, '参数错误', 'ValidationError')
 
 }
 

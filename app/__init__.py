@@ -23,6 +23,8 @@ from app.api import initialize_routes
 from app.config import load_config
 from common.log import FlaskLogStash
 from common.utils import RedisClient
+from common.lock import LockManager, RedisLockBackend
+
 
 config = load_config()
 
@@ -66,8 +68,7 @@ rest_api = Api()
 redis_conn = init_redis()
 redis_client = RedisClient(redis_conn)
 
-from common.lock import Lock, RedisLockBackend
-distributedLock = Lock(RedisLockBackend)
+distributedLock = LockManager(RedisLockBackend)
 
 
 def create_app(env_config=config):
@@ -92,4 +93,5 @@ def create_app(env_config=config):
     return app
 
 
+# TODO 此处是否可以不实例化？
 current_app = create_app()

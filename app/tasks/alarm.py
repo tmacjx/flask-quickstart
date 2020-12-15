@@ -5,7 +5,7 @@
 """
 
 # todo 阿里云报警
-from app.tasks import taskExecutor
+from .executor import taskExecutor
 
 
 def send_alarm():

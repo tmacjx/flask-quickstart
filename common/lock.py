@@ -23,7 +23,7 @@ class Lock(object):
     def __init__(self, backend):
         self.backend = backend
 
-    def acquire(self, key, duration):
+    def acquire_safe(self, key, duration):
         """
         Attempt to acquire the lock.
 
@@ -31,24 +31,41 @@ class Lock(object):
         manager that will automatically release the lock when exited. If the
         lock cannot be acquired, an ``UnableToAcquireLock`` error will be
         raised.
-        """
-        try:
-            self.backend.acquire(key, duration)
-        except Exception as error:
-            six.raise_from(
-                UnableToAcquireLock(u"Unable to acquire {!r} due to error: {}".format(self, error)),
-                error,
-            )
 
-        # TODO 此处如何判断获取Lock成功？？
+        获取锁后, 立马删除
+        with acquire_safe(key, duration) as res:
+            if res == 1:
+               print("获取成功")
+            else:
+               print("获取失败")
+
+        :param key:
+        :param duration:
+        :return:
+        """
+        res = self.acquire(key, duration)
+
         @contextmanager
         def release():
             try:
-                yield
+                yield res
             finally:
                 self.release(key)
 
         return release()
+
+    def acquire(self, key, duration):
+        """
+        """
+        try:
+            res = self.backend.acquire(key, duration)
+        except Exception as error:
+            res = -1
+            six.raise_from(
+                UnableToAcquireLock(u"Unable to acquire {!r} due to error: {}".format(self, error)),
+                error,
+            )
+        return res
 
     def release(self, key):
         """
@@ -75,7 +92,7 @@ class LockBackend(object):
     ``sentry.utils.locking.Lock`` class.
     """
 
-    def acquire(self, key, duration, routing_key=None):
+    def acquire(self, key, duration):
         """
         Acquire a lock, represented by the given key for the given duration (in
         seconds.) This method should attempt to acquire the lock once, in a
@@ -89,13 +106,13 @@ class LockBackend(object):
         """
         raise NotImplementedError
 
-    def release(self, key, routing_key=None):
+    def release(self, key):
         """
         Release a lock. The return value is not used.
         """
         raise NotImplementedError
 
-    def locked(self, key, routing_key=None):
+    def locked(self, key):
         """
         Check if a lock has been taken.
         """
@@ -134,7 +151,7 @@ class RedisLockBackend(LockBackend):
     def prefix_key(self, key):
         return u"{}{}".format(self.prefix, key)
 
-    def acquire(self, key, duration, routing_key=None):
+    def acquire(self, key, duration):
         full_key = self.prefix_key(key)
         if self.client.set(full_key, self.uuid, ex=duration, nx=True) is not True:
             raise Exception(u"Could not set key: {!r}".format(full_key))
@@ -145,4 +162,12 @@ class RedisLockBackend(LockBackend):
 
     def locked(self, key, routing_key=None):
         return self.client.get(self.prefix_key(key)) is not None
+
+
+class LockManager(object):
+    def __init__(self, backend):
+        self.backend = backend
+
+    def __getattr__(self, name):
+        return getattr(self.backend, name)
 

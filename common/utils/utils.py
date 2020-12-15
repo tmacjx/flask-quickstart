@@ -3,7 +3,7 @@
 # @Author  : tmackan
 """
 
-from flask import request, abort
+from flask import request
 from sqlalchemy.orm.query import Query
 import decimal
 import json

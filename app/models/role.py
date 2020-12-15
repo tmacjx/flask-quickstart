@@ -4,22 +4,10 @@
 """
 
 from .import db
-from common.mixins.model_helpers import TimestampMixin, BaseModel
+from common.mixins.model_helpers import TimestampMixin
 
 
-# class Article(Base):
-#     __tablename__ = 'articles'
-#     id = Column(Integer, primary_key=True)
-#     comments = relationship("Comment")
-#
-#
-# class Comment(Base):
-#     __tablename__ = 'comments'
-#     id = Column(Integer, primary_key=True)
-#     article_id = Column(Integer, ForeignKey('articles.id'))
-
-
-class SysRole(TimestampMixin, BaseModel):
+class SysRole(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(32))
     enabled = db.Column(db.Integer)
@@ -31,13 +19,10 @@ class SysRole(TimestampMixin, BaseModel):
     def __repr__(self):
         return '<SysRole %r>' % self.role_name
 
-    def __unicode__(self):
-        return u'%s %s' % (self.id, self.role_name)
-
-    def pack_data(self):
-        return self.to_dict()
-
-    @classmethod
-    def get_all_by_role_name(cls, role_name):
-        result = cls.query.filter_by(role_name=role_name).all()
-        return result
+    @property
+    def serialize(self):
+        return {
+            "role_name": self.role_name,
+            "enabled": self.create_by,
+            "create_by": self.create_by
+        }

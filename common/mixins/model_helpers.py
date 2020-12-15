@@ -24,68 +24,68 @@ class TimestampMixin(object):
                            nullable=False)
 
 
-class BaseModel(db.Model):
-    __abstract__ = True
-
-    def to_dict(self, only=None, exclude=None):
-        """
-        :param only: 如果存在，则只显示 show中的字段
-        :param exclude: 过滤字段
-        :return:
-        """
-        table_columns = self.__table__.columns.keys()
-        relationships = self.__mapper__.relationships.keys()
-        model_properties = list(set(dir(self)) - set(table_columns) - set(relationships))
-        default_filed_list = table_columns + model_properties
-
-        if only is not None:
-            fields_list = list(only)
-        elif exclude is not None:
-            exclude_list = list(exclude)
-            if hasattr(self, "__exclude_fields__"):
-                exclude_list += list(getattr(self, "__exclude_fields__"))
-            fields_list = default_filed_list - exclude_list
-        else:
-            fields_list = default_filed_list
-
-        ret_data = {}
-
-        for key in fields_list:
-            if key.startswith("_"):
-                continue
-            if key not in dir(self):
-                raise TypeError('%s does not have an attribute %s' % (self, key))
-            # 如果是column
-            if key in table_columns:
-                ret_data[key] = getattr(self, key)
-            # 如果是property
-            if key in model_properties:
-                attr = getattr(self.__class__, key)
-                if isinstance(attr, property) or isinstance(attr, QueryableAttribute):
-                    val = getattr(self, key)
-                else:
-                    continue
-                if hasattr(val, "to_dict"):
-                    ret_data[key] = val.to_dict()
-                else:
-                    ret_data[key] = val
-        return ret_data
-
-    def to_json(self, only=None, exclude=None):
-        data = self.to_dict(only=only, exclude=exclude)
-        return json.dumps(data, cls=JSONEncoder)
-
-    @classmethod
-    def from_json(cls, json_str):
-        json_dict = json.loads(json_str)
-        data = json_dict
-        return cls(**data)
-
-    @classmethod
-    def from_dict(cls, data):
-        if not isinstance(data, dict):
-            data = dict(data)
-        return cls(**data)
+# class BaseModel(db.Model):
+#     __abstract__ = True
+#
+#     def to_dict(self, only=None, exclude=None):
+#         """
+#         :param only: 如果存在，则只显示 show中的字段
+#         :param exclude: 过滤字段
+#         :return:
+#         """
+#         table_columns = self.__table__.columns.keys()
+#         relationships = self.__mapper__.relationships.keys()
+#         model_properties = list(set(dir(self)) - set(table_columns) - set(relationships))
+#         default_filed_list = table_columns + model_properties
+#
+#         if only is not None:
+#             fields_list = list(only)
+#         elif exclude is not None:
+#             exclude_list = list(exclude)
+#             if hasattr(self, "__exclude_fields__"):
+#                 exclude_list += list(getattr(self, "__exclude_fields__"))
+#             fields_list = default_filed_list - exclude_list
+#         else:
+#             fields_list = default_filed_list
+#
+#         ret_data = {}
+#
+#         for key in fields_list:
+#             if key.startswith("_"):
+#                 continue
+#             if key not in dir(self):
+#                 raise TypeError('%s does not have an attribute %s' % (self, key))
+#             # 如果是column
+#             if key in table_columns:
+#                 ret_data[key] = getattr(self, key)
+#             # 如果是property
+#             if key in model_properties:
+#                 attr = getattr(self.__class__, key)
+#                 if isinstance(attr, property) or isinstance(attr, QueryableAttribute):
+#                     val = getattr(self, key)
+#                 else:
+#                     continue
+#                 if hasattr(val, "to_dict"):
+#                     ret_data[key] = val.to_dict()
+#                 else:
+#                     ret_data[key] = val
+#         return ret_data
+#
+#     def to_json(self, only=None, exclude=None):
+#         data = self.to_dict(only=only, exclude=exclude)
+#         return json.dumps(data, cls=JSONEncoder)
+#
+#     @classmethod
+#     def from_json(cls, json_str):
+#         json_dict = json.loads(json_str)
+#         data = json_dict
+#         return cls(**data)
+#
+#     @classmethod
+#     def from_dict(cls, data):
+#         if not isinstance(data, dict):
+#             data = dict(data)
+#         return cls(**data)
 
 
 def save_to_db(item, msg):
@@ -135,26 +135,52 @@ def _error_abort(code, message):
     abort(code, error=error)
 
 
-def paginate(query_set, page, page_size, serializer):
-    count = query_set.count()
+# TODO 需要测试
+def paginate(query_set, page, page_size):
+    """
+    分页 封装返回数据
+    :param query_set:
+    :param page:
+    :param page_size:
+    :return:
+    """
+    total = query_set.count()
 
     if page < 1:
         _error_abort(400, message='Page must be positive integer.')
 
-    if (page - 1) * page_size + 1 > count > 0:
+    if (page - 1) * page_size + 1 > total > 0:
         _error_abort(400, message='Page is out of range.')
 
     if page_size > 250 or page_size < 1:
         _error_abort(400, message='Page size is out of range (1-250).')
 
     results = query_set.paginate(page, page_size)
-
     return {
-        'count': count,
-        'page': page,
-        'page_size': page_size,
-        'results': [serializer(result) for result in results.items],
+        'total': total,
+        'current': page,
+        'size': page_size,
+        "pages": results.pages,
+        'records': [result for result in results.items],
     }
+
+
+# TODO 需要测试
+def get_paginated_list(klass, args, **kwargs):
+    """
+    根据前端传的page/page_size
+    查询封装分页数据
+    :param klass:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    queryset = _get_queryset(klass)
+    query_set = queryset.filter_by(**kwargs)
+    page = args['page']
+    page_size = args['page_size']
+    results = paginate(query_set, page, page_size)
+    return results
 
 
 def _get_queryset(klass):
