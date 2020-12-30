@@ -36,7 +36,7 @@ class BaseError(Exception):
 
 class ServerError(BaseError):
     def __init__(self, message=None, payload=None):
-            super(ServerError, self).__init__(message, payload)
+        super(ServerError, self).__init__(message, payload)
 
 
 class ThirdAPIException(BaseError):
